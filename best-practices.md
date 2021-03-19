@@ -38,6 +38,25 @@ A more complex example is writing an if-else statement. That can be improved usi
     evens$.subscribe(value => doSomethingWithEvens(value));
     odds$.subscribe(value => doSomethingWithOdds(value));
 
+### Nested subscribe calls
+
+Another tempting mistake is subscribing to another `Observable` in the `subscribe` callback of the first one. This mostly happens when we want to receive some data and then create a new `Observable` using that data (fro example, when using Angular's `HttpClient`). Doing so creates unnecessary levels of nested `Observables` and makes it harder to reason about those streams. Instead, use operators like `mergeMap`, `switchMap`, `concatMap` and `exhaustMap`, depending on the problem at hand. For example, instead of this:
+
+    fromEvent(document.querySelector('input'), 'input').subscribe(event => {
+        ajax(`http://my-api/search?query=${event.target.value}`).subscribe(response => {
+            // handle the response
+        });
+    });
+
+Do this:
+
+    fromEvent(document.querySelector('input'), 'input').pipe(
+        switchMap(event => ajax(`http://my-api/search?query=${event.target.value}`))
+    ).subscribe(response => {
+        // handle the response
+    }); 
+
+
 ### In general, heavy logic when subscribing is discouraged
 
 Here is a rule of thumb: 
@@ -70,3 +89,7 @@ In this example just looking at the `Observable` is enough to know exactly when 
 ### Be careful to avoid takeUntil leaks
 
 When `takeUntil` is not used correctly, it can lead to memory leaks too. As a rule of thumb, always place `takeUntil` as the last operator in the `pipe`. 
+
+## Use linting rules
+
+t can be tedious to review projects endlessly to make sure every little detail is kept in line with the best practices, so it is a good idea to use linting rules. One example is [eslint-plugin-rxjs](https://github.com/cartant/eslint-plugin-rxjs), which has rules guarding from most bad practices mentioned in this section. If you use RxJS with Angular, another nice tool to have is [eslint-plugin-rxjs-angular](https://github.com/cartant/eslint-plugin-rxjs-angular). 
